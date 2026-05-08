@@ -25,47 +25,51 @@ public class LMDataInitializer implements CommandLineRunner {
     @Transactional
     public void run(String... args) {
         try {
+            System.out.println("🚀 Starting LM Hospital Data Initialization...");
+            
             ensureAdminUser();
             seedDoctors();
             seedPatients();
             seedAppointments();
             seedMedicalRecords();
+            
             System.out.println("✅ Data initialization completed successfully!");
         } catch (Exception e) {
-            System.err.println("❌ Data initialization failed: " + e.getMessage());
+            System.err.println("❌ Data initialization FAILED: " + e.getMessage());
             e.printStackTrace();
-            throw e;
+            throw new RuntimeException("Data initialization failed", e);
         }
     }
 
     private void ensureAdminUser() {
-        if (!userRepository.findByUsername("lm_admin").isPresent() 
-            && !userRepository.findByEmail("admin@lmhospital.com").isPresent()) {
-            
-            LMUser admin = LMUser.builder()
-                    .username("lm_admin")
-                    .fullName("Admin Kumar")
-                    .email("admin@lmhospital.com")
-                    .phone("+91-9876543210")
-                    .role(LMRole.ADMIN)
-                    .password(passwordEncoder.encode("admin123"))
-                    .active(true)
-                    .build();
-            
-            userRepository.save(admin);
-            System.out.println("✅ Admin user created");
-        } else {
-            System.out.println("ℹ️ Admin user already exists");
-        }
-    }
-
-    private void seedDoctors() {
-        // Check if doctors already exist
-        if (doctorRepository.count() > 0) {
-            System.out.println("ℹ️ Doctors already seeded");
+        if (userRepository.findByUsername("lm_admin").isPresent() ||
+            userRepository.findByEmail("admin@lmhospital.com").isPresent()) {
+            System.out.println("ℹ️ Admin user already exists, skipping...");
             return;
         }
 
+        LMUser admin = LMUser.builder()
+                .username("lm_admin")
+                .fullName("Admin Kumar")
+                .email("admin@lmhospital.com")
+                .phone("+91-9876543210")
+                .role(LMRole.ADMIN)
+                .password(passwordEncoder.encode("admin123"))
+                .active(true)
+                .build();
+        
+        userRepository.save(admin);
+        System.out.println("✅ Admin user created with username: lm_admin");
+    }
+
+    private void seedDoctors() {
+        if (doctorRepository.count() > 0) {
+            System.out.println("ℹ️ Doctors already exist (" + doctorRepository.count() + " found), skipping...");
+            return;
+        }
+
+        System.out.println("📋 Creating doctors...");
+        
         LMDoctor doctor1 = LMDoctor.builder()
                 .doctorCode("LMD-001")
                 .fullName("Dr. Priya Sharma")
@@ -126,20 +130,23 @@ public class LMDataInitializer implements CommandLineRunner {
                 .build();
         doctorRepository.save(doctor4);
 
-        System.out.println("✅ Seeded " + doctorRepository.count() + " doctors");
+        System.out.println("✅ Created " + doctorRepository.count() + " doctors");
     }
 
     private void seedPatients() {
         if (patientRepository.count() > 0) {
-            System.out.println("ℹ️ Patients already seeded");
+            System.out.println("ℹ️ Patients already exist (" + patientRepository.count() + " found), skipping...");
             return;
         }
 
-        // Get actual doctor IDs from database
+        // IMPORTANT: Fetch doctors by their doctorCode, NOT by hardcoded IDs
         LMDoctor cardiologist = doctorRepository.findByDoctorCode("LMD-001")
-                .orElseThrow(() -> new RuntimeException("Cardiologist not found"));
+                .orElseThrow(() -> new RuntimeException("Cardiologist (LMD-001) not found!"));
+        
         LMDoctor neurologist = doctorRepository.findByDoctorCode("LMD-002")
-                .orElseThrow(() -> new RuntimeException("Neurologist not found"));
+                .orElseThrow(() -> new RuntimeException("Neurologist (LMD-002) not found!"));
+
+        System.out.println("📋 Creating patients...");
 
         patientRepository.save(LMPatient.builder()
                 .patientId("LMP-A1B2C3D4")
@@ -231,52 +238,72 @@ public class LMDataInitializer implements CommandLineRunner {
                 .emergencyContact("+91-9567890100")
                 .build());
 
-        System.out.println("✅ Seeded " + patientRepository.count() + " patients");
+        System.out.println("✅ Created " + patientRepository.count() + " patients");
     }
 
     private void seedAppointments() {
         if (appointmentRepository.count() > 0) {
-            System.out.println("ℹ️ Appointments already seeded");
+            System.out.println("ℹ️ Appointments already exist (" + appointmentRepository.count() + " found), skipping...");
             return;
         }
 
-        // Get references
-        LMPatient patient1 = patientRepository.findById(1L).orElse(null);
-        LMPatient patient2 = patientRepository.findById(2L).orElse(null);
-        LMPatient patient3 = patientRepository.findById(3L).orElse(null);
-        LMPatient patient4 = patientRepository.findById(4L).orElse(null);
+        // Fetch required entities
         LMDoctor cardiologist = doctorRepository.findByDoctorCode("LMD-001").orElse(null);
         LMDoctor neurologist = doctorRepository.findByDoctorCode("LMD-002").orElse(null);
-
-        if (patient1 != null && cardiologist != null) {
-            appointmentRepository.save(LMAppointment.builder()
-                    .patientId(patient1.getId())
-                    .patientName(patient1.getFullName())
-                    .doctorId(cardiologist.getId())
-                    .doctorName(cardiologist.getFullName())
-                    .doctorCode(cardiologist.getDoctorCode())
-                    .department("Cardiology")
-                    .specialization("Cardiology")
-                    .appointmentDate(LocalDateTime.now().plusHours(2))
-                    .reason("Follow-up checkup for hypertension")
-                    .status(LMAppointmentStatus.CONFIRMED)
-                    .build());
+        
+        if (cardiologist == null || neurologist == null) {
+            System.out.println("⚠️ Cannot seed appointments: Required doctors not found");
+            return;
         }
 
-        System.out.println("✅ Seeded appointments");
+        System.out.println("📋 Creating appointments...");
+
+        appointmentRepository.save(LMAppointment.builder()
+                .patientName("Arjun Mehta")
+                .doctorId(cardiologist.getId())
+                .doctorName(cardiologist.getFullName())
+                .doctorCode(cardiologist.getDoctorCode())
+                .department("Cardiology")
+                .specialization("Cardiology")
+                .appointmentDate(LocalDateTime.now().plusHours(2))
+                .reason("Follow-up checkup for hypertension")
+                .status(LMAppointmentStatus.CONFIRMED)
+                .build());
+
+        appointmentRepository.save(LMAppointment.builder()
+                .patientName("Sneha Patel")
+                .doctorId(cardiologist.getId())
+                .doctorName(cardiologist.getFullName())
+                .doctorCode(cardiologist.getDoctorCode())
+                .department("Cardiology")
+                .specialization("Cardiology")
+                .appointmentDate(LocalDateTime.now().plusHours(4))
+                .reason("Chest discomfort")
+                .status(LMAppointmentStatus.SCHEDULED)
+                .build());
+
+        System.out.println("✅ Created " + appointmentRepository.count() + " appointments");
     }
 
     private void seedMedicalRecords() {
         if (medicalRecordRepository.count() > 0) {
-            System.out.println("ℹ️ Medical records already seeded");
+            System.out.println("ℹ️ Medical records already exist (" + medicalRecordRepository.count() + " found), skipping...");
             return;
         }
 
+        LMDoctor cardiologist = doctorRepository.findByDoctorCode("LMD-001").orElse(null);
+        
+        if (cardiologist == null) {
+            System.out.println("⚠️ Cannot seed medical records: Required doctor not found");
+            return;
+        }
+
+        System.out.println("📋 Creating medical records...");
+
         medicalRecordRepository.save(LMMedicalRecord.builder()
-                .patientId(1L)
                 .patientName("Arjun Mehta")
-                .doctorId(1L)
-                .doctorName("Dr. Priya Sharma")
+                .doctorId(cardiologist.getId())
+                .doctorName(cardiologist.getFullName())
                 .diagnosis("Hypertension Stage 1")
                 .vitals("BP: 145/90, HR: 82, Temp: 98.6°F, SpO2: 97%")
                 .prescription("Amlodipine 5mg OD, Losartan 50mg OD")
@@ -285,6 +312,6 @@ public class LMDataInitializer implements CommandLineRunner {
                 .followUpDate("2025-05-15")
                 .build());
 
-        System.out.println("✅ Seeded medical records");
+        System.out.println("✅ Created " + medicalRecordRepository.count() + " medical records");
     }
 }
