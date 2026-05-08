@@ -12,11 +12,11 @@ import java.util.Optional;
 @Repository
 public interface LMDoctorRepository extends JpaRepository<LMDoctor, Long> {
     
-    // Core find methods
+    // Core find methods - these work with your entity
     Optional<LMDoctor> findByDoctorCode(String doctorCode);
     Optional<LMDoctor> findByEmail(String email);
     
-    // Active doctors
+    // Active doctors filtering
     List<LMDoctor> findByActiveTrue();
     
     // Search methods
@@ -24,32 +24,18 @@ public interface LMDoctorRepository extends JpaRepository<LMDoctor, Long> {
     List<LMDoctor> findByDepartmentContainingIgnoreCase(String department);
     List<LMDoctor> findByFullNameContainingIgnoreCase(String fullName);
     
-    // Existence checks
+    // Existence checks (used by LMDataInitializer)
     boolean existsByEmail(String email);
     boolean existsByDoctorCode(String doctorCode);
-    boolean existsByEmailAndDoctorCodeNot(String email, String doctorCode); // For updates
     
-    // Combined queries
+    // Additional useful queries
+    Optional<LMDoctor> findByDoctorCodeAndActiveTrue(String doctorCode);
     List<LMDoctor> findBySpecializationAndActiveTrue(String specialization);
-    List<LMDoctor> findByDepartmentAndActiveTrue(String department);
-    
-    // Count methods
-    long countByActiveTrue();
-    long countBySpecialization(String specialization);
     
     // Custom query for search with multiple criteria
     @Query("SELECT d FROM LMDoctor d WHERE " +
-           "(:keyword IS NULL OR LOWER(d.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(d.specialization) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(d.department) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
-           "(:activeOnly = false OR d.active = true)")
-    List<LMDoctor> searchDoctors(@Param("keyword") String keyword, 
-                                  @Param("activeOnly") boolean activeOnly);
-    
-    // Get doctors by multiple IDs
-    List<LMDoctor> findByIdIn(List<Long> ids);
-    
-    // Order by name
-    List<LMDoctor> findByActiveTrueOrderByFullNameAsc();
-    List<LMDoctor> findAllByOrderByFullNameAsc();
+           "(:specialization IS NULL OR LOWER(d.specialization) LIKE LOWER(CONCAT('%', :specialization, '%'))) AND " +
+           "(:active IS NULL OR d.active = :active)")
+    List<LMDoctor> findDoctorsByFilters(@Param("specialization") String specialization,
+                                         @Param("active") Boolean active);
 }
