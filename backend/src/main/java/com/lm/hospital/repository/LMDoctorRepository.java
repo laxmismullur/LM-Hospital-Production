@@ -12,9 +12,13 @@ import java.util.Optional;
 @Repository
 public interface LMDoctorRepository extends JpaRepository<LMDoctor, Long> {
     
-    // Core find methods - these work with your entity
+    // Core find methods
     Optional<LMDoctor> findByDoctorCode(String doctorCode);
     Optional<LMDoctor> findByEmail(String email);
+    
+    // MISSING METHODS THAT CONTROLLERS NEED:
+    Optional<LMDoctor> findByUserId(Long userId);
+    Optional<LMDoctor> findByUsername(String username);
     
     // Active doctors filtering
     List<LMDoctor> findByActiveTrue();
@@ -24,7 +28,7 @@ public interface LMDoctorRepository extends JpaRepository<LMDoctor, Long> {
     List<LMDoctor> findByDepartmentContainingIgnoreCase(String department);
     List<LMDoctor> findByFullNameContainingIgnoreCase(String fullName);
     
-    // Existence checks (used by LMDataInitializer)
+    // Existence checks
     boolean existsByEmail(String email);
     boolean existsByDoctorCode(String doctorCode);
     
