@@ -1,7 +1,12 @@
 package com.lm.hospital.model;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "lm_users")
@@ -10,6 +15,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class LMUser {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -20,16 +26,19 @@ public class LMUser {
     @Column(nullable = false)
     private String password;
 
-    @Column(nullable = false)
     private String fullName;
 
-    @Column(nullable = false)
+    @Column(unique = true)
     private String email;
 
+    private String phone;
+
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private LMRole role;
 
-    private String phone;
-    private boolean active = true;
+    @Builder.Default
+    private Boolean active = true;
+    
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
 }
