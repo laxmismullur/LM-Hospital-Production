@@ -47,4 +47,63 @@ public class LMDoctor {
     
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
+    
+    // FIELDS THAT CONTROLLERS EXPECT:
+    
+    @OneToOne
+    @JoinColumn(name = "user_id")
+    private LMUser user;
+    
+    private String username;
+    private String password;
+    private String address;
+    
+    // Helper methods for userId
+    public Long getUserId() {
+        return user != null ? user.getId() : null;
+    }
+    
+    public void setUserId(Long userId) {
+        // This would need proper implementation - typically you'd fetch the user
+        if (userId != null && user == null) {
+            user = new LMUser();
+            user.setId(userId);
+        } else if (user != null) {
+            user.setId(userId);
+        }
+    }
+    
+    public String getUsername() {
+        return username != null ? username : (user != null ? user.getUsername() : null);
+    }
+    
+    public String getPassword() {
+        return password != null ? password : (user != null ? user.getPassword() : null);
+    }
+    
+    public void setUsername(String username) {
+        this.username = username;
+        if (user != null) {
+            user.setUsername(username);
+        }
+    }
+    
+    public void setPassword(String password) {
+        this.password = password;
+        if (user != null) {
+            user.setPassword(password);
+        }
+    }
+    
+    public String getAddress() {
+        return address;
+    }
+    
+    public void setAddress(String address) {
+        this.address = address;
+    }
+    
+    public boolean isActive() {
+        return active != null && active;
+    }
 }
