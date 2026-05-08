@@ -41,4 +41,9 @@ public class LMUser {
     
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
+    
+    // This is the method LMUserDetailsService is looking for
+    public boolean isActive() {
+        return active != null && active;
+    }
 }
